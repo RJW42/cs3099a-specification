@@ -113,6 +113,108 @@ paths:
           description: Not Found
         '500':
           description: Internal Server Error
+          
+  /fed/communities/{id}/log:
+    get:
+      tags:
+        - communities
+      summary: Gets this communities log.
+      description: | 
+        Returns an array of log entries. Log entries are an ordered list of LogEntry objects. Ordered 
+        by event_number from highest to lowest. If a group does not wish to implement logs then this 
+        endpoint should return an error. I.e 404 / 500. Also for communities with view privileges in 
+        place (i.e not all users can view all posts) then logs should not be implemented as this could 
+        cause issues with caching and invalid permissions, ect. 
+      parameters:
+        - $ref: '#/parameters/ClientHost'
+        - in: path
+          name: id
+          description: "ID of the community being requested"
+          required: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+        - name: limit 
+          in: query 
+          description: "Limit the number of events to the n latest events"
+          required: false
+          explode: true 
+          schema:
+            type: integer
+        - name: events_since
+          in: query
+          description: |
+            Returns all events that occoured after the given event. 
+            If the given event is the latest event then an empty array 
+            should be returned. 
+          required: false 
+          example: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogEntry'
+              example: [
+                  {event_number: 5, content_type: "COMMUNITY", content_id: "Minecraft", change_type: "EDIT"},
+                  {event_number: 4, content_type: "POST", content_id: "884f0f3c-04d9-4d93-bb9c-b140ff262a57", change_type: "CREATE"},
+                  {event_number: 3, content_type: "POST", content_id: "884f0f3c-04d9-4d93-bb9c-b140ff262a55", change_type: "EDIT"},
+                  {event_number: 2, content_type: "POST", content_id: "884f0f3c-04d9-4d93-bb9c-b140ff262a53", change_type: "DELETE"},
+                  {event_number: 1, content_type: "POST", content_id: "884f0f3c-04d9-4d93-bb9c-b140ff262a53", change_type: "CREATE"},
+                  {event_number: 0, content_type: "POST", content_id: "884f0f3c-04d9-4d93-bb9c-b140ff262a55", change_type: "CREATE"}
+                  ]
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+          
+  /fed/communities/{id}/request:
+    post:
+      tags:
+        - communities
+      summary: Sends a request to this community. 
+      description: | 
+        Sends a request to the community. Currently the only item which can be request 
+        is to start or stop reciving updates to this communities log. This could be expanded 
+        in future to allow users to request futher privileges. 
+        Note one possible implementation of logs could be to implement this endpoint plus 
+        the /fed/event endpoint but not implement the /fed/community/{id}/log endpoin. This 
+        would allow a possible push notifications implementation without having to deal with 
+        storing logs. Becuase of this anyone wanting to implement logs has to check that 
+        the /fed/community/{id}/log enpoint is working not just this one. 
+      parameters:
+        - $ref: '#/parameters/ClientHost'
+        - in: path
+          name: id
+          description: "ID of the community being requested"
+          required: true
+          schema:
+            type: string
+            format: "^[a-zA-Z0-9-_]{1,24}$"
+      requestBody:
+        description: Request to a community
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityRequest'
+      responses:
+        '200':
+          description: OK
+        '202':
+          description: Accepted (Implementing privelege requests)
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
 
   /fed/posts:
     get:
@@ -191,12 +293,10 @@ paths:
       description: |
         If the post is in response to another post, the `title`
         field must be set to `null`.
-
         Servers may decide which `contentType`s they will accept
         as posts (including comments), however they must at least
         accept `text`. If the server does not accept a particular
         `contentType` then it should return a `501` error.
-
         If a server can not render `contentType` `markdown`, it
         should display it as plain text (as opposed to rejecting
         the request).
@@ -338,6 +438,36 @@ paths:
           description: Internal Server Error
         '501':
           description: Not Implemented
+  
+  /fed/events:
+    post:
+      tags:
+        - other
+      summary: Sends an event to this fed. 
+      description: | 
+        Sends an event to this host. 
+        
+        Currently the only event will be that of a new item in a log
+      parameters:
+        - $ref: '#/parameters/ClientHost'
+      requestBody:
+        description: New event
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: OK
+        '202':
+          description: Accepted (Implementing privelege requests)
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
 
 components:
   schemas:
@@ -520,7 +650,6 @@ components:
             consectetur adipisci[ng]velit, sed quia non-numquam
             [do] eius modi tempora inci[di]dunt, ut labore et
             dolore magnam aliquam quaerat voluptatem.
-
     PostContentTypeMarkdown:
       type: object
       required:
@@ -538,3 +667,52 @@ components:
             ## Subtitle
             
             ** Some Bold Text **
+            
+    LogEntry:
+      type: object
+      required: 
+        - entry_number
+        - content_type
+        - content_id 
+        - change_type 
+      properties:
+        entry_number:
+          type: number
+          example: 1
+        content_type:
+          type: string 
+          example: "POST"
+        content_id:
+          type: string 
+          example: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c"
+        change_type:
+          type: string
+          example: "CREATED"
+          
+    CommunityRequest:
+      type: object
+      required: 
+        - request_type
+        - request 
+      properties:
+        request_type:
+          type: string 
+          example: "LOG_REQUEST"
+        request:
+          type: object
+          example:
+            {log_action: "STOP"}
+            
+    Event:
+      type: object 
+      required:
+        - event_type
+        - content
+      properties:
+        event_type:
+          type: string 
+          example: "LOG_UPDATE"
+        content:
+          type: object 
+          example: 
+            {community: "Minecraft", entry_number: 1, content_type: "POST", content_id: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c", change_type: "CREATED"}
