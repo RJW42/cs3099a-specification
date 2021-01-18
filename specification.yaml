@@ -709,7 +709,7 @@ components:
         - event_type
         - content
       properties:
-        event_type:
+        eventType:
           type: string 
           example: "LOG_UPDATE"
         content:
