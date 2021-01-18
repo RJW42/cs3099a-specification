@@ -120,11 +120,15 @@ paths:
         - communities
       summary: Gets this communities log.
       description: | 
-        Returns an array of log entries. Log entries are an ordered list of LogEntry objects. Ordered 
-        by event_number from highest to lowest. If a group does not wish to implement logs then this 
-        endpoint should return an error. I.e 404 / 500. Also for communities with view privileges in 
-        place (i.e not all users can view all posts) then logs should not be implemented as this could 
-        cause issues with caching and invalid permissions, ect. 
+        Returns an array of log entries. Log entries are an ordered list of `LogEntry`
+        objects, ordered  by `eventNumber` starting at highest.
+        
+        If a group does not wish to implement logs then this  endpoint should return
+        a 501 HTTP error.
+        
+        For communities with view privileges in place (i.e not all users can view
+        all posts), this endpoint should ensure the `Cache-Control: max-age=0`
+        header is set.
       parameters:
         - $ref: '#/parameters/ClientHost'
         - in: path
