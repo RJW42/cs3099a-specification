@@ -454,28 +454,24 @@ paths:
         '501':
           description: Not Implemented
   
-  /fed/events:
+  /fed/logs:
     post:
       tags:
         - other
-      summary: Sends an event to this server. 
+      summary: Send log entries to this sever
       description: | 
-        Sends an event to this host. 
-        
-        Currently the only event will be that of a new item in a log
+        Endpoint for sending log updates that this server reqested.
       parameters:
         - $ref: '#/parameters/ClientHost'
       requestBody:
-        description: New event
+        description: New log entry
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: '#/components/schemas/LogEntry'
       responses:
         '200':
           description: OK
-        '202':
-          description: Accepted (Implementing privelege requests)
         '400':
           description: Bad Request
         '404':
@@ -686,48 +682,20 @@ components:
     LogEntry:
       type: object
       required: 
-        - entry_number
-        - content_type
-        - content_id 
-        - change_type 
+        - entryNumber
+        - contentType
+        - contentID 
+        - changeType 
       properties:
-        entry_number:
+        entryNumber:
           type: number
           example: 1
-        content_type:
+        contentType:
           type: string 
           example: "POST"
-        content_id:
+        contentID:
           type: string 
           example: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c"
-        change_type:
+        changeType:
           type: string
           example: "CREATED"
-          
-    CommunityRequest:
-      type: object
-      required: 
-        - request_type
-        - request 
-      properties:
-        request_type:
-          type: string 
-          example: "LOG_REQUEST"
-        request:
-          type: object
-          example:
-            {log_action: "STOP"}
-            
-    Event:
-      type: object 
-      required:
-        - event_type
-        - content
-      properties:
-        eventType:
-          type: string 
-          example: "LOG_UPDATE"
-        content:
-          type: object 
-          example: 
-            {community: "Minecraft", entry_number: 1, content_type: "POST", content_id: "5ab3acce-e9d1-4b3a-be97-60d2cbe32a4c", change_type: "CREATED"}
