@@ -178,6 +178,8 @@ paths:
           description: Not Found
         '500':
           description: Internal Server Error
+        '501':
+          description: Not Implemented
           
   /fed/communities/{id}/subscribe:
     put:
