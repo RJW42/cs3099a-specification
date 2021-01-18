@@ -443,7 +443,7 @@ paths:
     post:
       tags:
         - other
-      summary: Sends an event to this fed. 
+      summary: Sends an event to this server. 
       description: | 
         Sends an event to this host. 
         
